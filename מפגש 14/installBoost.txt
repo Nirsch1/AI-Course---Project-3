@@ -1,0 +1,11 @@
+1) download boost version requested:
+http://www.boost.org/users/history/
+2) uncompress the tar file
+3) Boost's bootstrap setup:
+./bootstrap.sh --prefix=/usr/local
+4) if needed (after changes), build it:
+./b2
+5) install it:
+sudo ./b2 install 
+6)run as root (enable using system path for dinamic libs):
+ldconfig

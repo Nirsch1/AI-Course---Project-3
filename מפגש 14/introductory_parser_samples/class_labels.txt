@@ -1,0 +1,4 @@
+binoculars
+reflex_camera
+tabby_tiger_cat
+ 
