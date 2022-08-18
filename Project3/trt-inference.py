@@ -1,3 +1,4 @@
+# trt-inference
 #!pip install sklearn -qqq
 
 import time
@@ -37,6 +38,21 @@ else:
     model = tf.keras.models.load_model('.\\artifacts\\FCNN-v3')
 
 '''
+Stage 1.5: Run the TensorFlow model
+========================
+Run the TensorFlow model on the test_set, 
+and check the running-time.
+'''
+startTimeCpu = time.time()
+model.evaluate(test_set.images, test_set.labels, verbose=2)
+endTimeCpu = time.time()
+
+# total time taken
+averageTime = (endTimeCpu - startTimeCpu) / 1e-3 / len(test_set)
+print(f"Nir: TensorFlow inference average time is: {averageTime} milliseconds")
+print(f"Nir: TensorFlow inference average FPS is: {1000 / averageTime}")
+
+'''
 Stage 2: Convert to ONNX
 ========================
 Convert the model to ONNX and save it to a file. This will allow
@@ -52,7 +68,16 @@ tensor rt engine.
 We use FP 32 precision.
 '''
 TrtModelParse(modelFile)
-TrtModelOptimizeAndSerialize(precision='fp32')
+print("===================================")
+print("Before TrtModelOptimizeAndSerialize")
+print("===================================")
+#TrtModelOptimizeAndSerialize(precision='fp32')
+#TrtModelOptimizeAndSerialize(precision='fp16')
+calibSet=MatrixIterator(validation_set.images)
+TrtModelOptimizeAndSerialize(precision='int8', calibPath="/content", calibSet=calibSet)
+print("===================================")
+print("After TrtModelOptimizeAndSerialize")
+print("===================================")
 ModelInferSetup()
 
 '''
