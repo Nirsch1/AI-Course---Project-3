@@ -1,3 +1,5 @@
+# wandb_helpers
+!pip install wandb
 from datetime import datetime
 import wandb
 from collections import namedtuple
@@ -50,5 +52,5 @@ def load_best_model(sweep_id):
     model_file = runs[0].file("model-best.h5").download(replace=True)
     model_file.close()
 
-if (__name__ == "__main__"):
-    load_best_model("6zmewzd0")
+#if (__name__ == "__main__"):
+#    load_best_model("6zmewzd0")
