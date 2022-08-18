@@ -1,8 +1,36 @@
-import os
+# TensorRTUtils
+!pip install pycuda
+!pip install tensorrt
 import tensorrt as trt
 import pycuda.autoinit
 import pycuda.driver as cuda
 import numpy as np
+import os
+
+class MatrixIterator:
+    """Class to implement an iterator on a matrix"""
+
+    def __init__(self, matrix, n=0, max=0):
+        self.matrix = matrix
+        if max > 0:
+          self.max    = max
+        else:
+          self.max    = matrix.shape[0]
+        self.n      = n
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.n <= self.max:
+            result = self.matrix[self.n,:,:].squeeze()
+            self.n += 1
+            return result
+        else:
+            raise StopIteration
+
+    def first(self):
+        return self.matrix[0,:,:].squeeze()
 
 class HostDeviceMem(object):
     def __init__(self, host_mem, device_mem):
@@ -69,30 +97,36 @@ class Int8EntropyCalibrator(trt.IInt8EntropyCalibrator2):
         self.deviceInput = None
         self.currentIndex = 0
         self.PreProcessedSetPath = calibrationSetPath + '/PreProcessedSet'
-        self.PreProcessedSetCount = calibSet.n
-        self.PreProcessedSize = calibSet[0][0].size * 4 #float
+        self.PreProcessedSetCount = calibSet.max
+        self.PreProcessedSize = calibSet.first().size * 4 #float
         self.currentIndex = 0
 
         # Allocate enough memory for a whole batch.
         self.deviceInput = cuda.mem_alloc(self.PreProcessedSize)
 
         if os.path.exists(self.cacheFile):
-            print('Calibration cache file is already exist - ', self.cacheFile)
+            print('Calibration cache file already exists - ', self.cacheFile)
             return
 
-        filesCnt = os.listdir(self.PreProcessedSetPath)
+        if os.path.isdir(self.PreProcessedSetPath):
+            filesCnt = os.listdir(self.PreProcessedSetPath)
 
-        if len(filesCnt) == self.PreProcessedSetCount:
-            print('ERROR - Pre processed file set is exist!!!')
-            return
+            if len(filesCnt) == self.PreProcessedSetCount:
+                print('ERROR - Pre processed file set exists!!!')
+                return
+        else:
+            os.mkdir(self.PreProcessedSetPath)
 
         if self.PreProcessedSetCount == 0:
             print('ERROR - Calibration set is empty!!!')
 
         print('Start calibration batches build')
 
+        print(f"Nir: PreProcessedSetCount = {self.PreProcessedSetCount}") # Debug printing
         for idx in range(self.PreProcessedSetCount):
-            preProcImg, label = calibSet.next()
+            preProcImg = next(calibSet)
+            if idx % 100 == 0:
+              print(f"Nir: {idx} preProcImg shape: {preProcImg.shape}") # Debug printing
             preProcessedFile = open(self.PreProcessedSetPath + '/' + str(idx) + '.bin', mode='wb')
             preProcImg.tofile(preProcessedFile)
             preProcessedFile.close()
@@ -191,7 +225,12 @@ def TrtModelOptimizeAndSerialize(precision = 'fp32',calibPath="", calibSet=None)
     global engine
     global runtime
 
+    global g_DEBUG_network
+    global g_DEBUG_config
+    global g_DEBUG_modelOptName
+
     modelOptName = modelName + precision + '.trt.engine'
+    g_DEBUG_modelOptName = modelOptName
 
     if os.path.exists(modelOptName):
         with open(modelOptName, 'rb') as f:
@@ -220,12 +259,21 @@ def TrtModelOptimizeAndSerialize(precision = 'fp32',calibPath="", calibSet=None)
                 calib = Int8EntropyCalibrator(calibPath, calibSet)
                 config.int8_calibrator = calib
 
-        engine = builder.build_engine(network, config)
-
-        serializedEngine = engine.serialize()
+        g_DEBUG_network = network
+        g_DEBUG_config  = config
+        try:
+            print("Nir: TrtModelOptimizeAndSerialize before build_serialized_network")
+            engine = builder.build_serialized_network(network, config)
+            print("Nir: TrtModelOptimizeAndSerialize after build_serialized_network")
+        except AttributeError:
+            print("Nir: TrtModelOptimizeAndSerialize before build_engine")
+            non_serialized_engine = builder.build_engine(network, config)
+            print("Nir: TrtModelOptimizeAndSerialize after build_engine & before serialize")
+            engine = non_serialized_engine.serialize()
+            print("Nir: TrtModelOptimizeAndSerialize after serialize")
 
         engineFD = open(modelOptName, 'wb')
-        engineFD.write(serializedEngine)
+        engineFD.write(engine)
         engineFD.close()
 
     print('TRT engine - ', engine.device_memory_size, ' Bytes')
