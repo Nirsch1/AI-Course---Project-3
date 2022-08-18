@@ -1,5 +1,5 @@
 # wandb_helpers
-!pip install wandb
+#!pip install wandb
 from datetime import datetime
 import wandb
 from collections import namedtuple

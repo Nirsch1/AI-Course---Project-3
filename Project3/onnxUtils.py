@@ -1,10 +1,10 @@
 # onnxUtils
-!pip install tf2onnx onnx onnxsim
+#!pip install tf2onnx onnx onnxsim
 import json
 import time
 import tf2onnx
 import onnx
-#import onnxsim
+import onnxsim
 import os.path
 
 

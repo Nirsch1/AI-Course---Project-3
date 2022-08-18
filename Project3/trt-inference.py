@@ -2,6 +2,7 @@
 #!pip install sklearn -qqq
 
 import time
+from tokenize import Single
 from sklearn.metrics import classification_report, confusion_matrix
 import tensorflow as tf
 import tensorrt as trt
@@ -73,8 +74,12 @@ print("Before TrtModelOptimizeAndSerialize")
 print("===================================")
 #TrtModelOptimizeAndSerialize(precision='fp32')
 #TrtModelOptimizeAndSerialize(precision='fp16')
-calibSet=MatrixIterator(validation_set.images)
-TrtModelOptimizeAndSerialize(precision='int8', calibPath="/content", calibSet=calibSet)
+temp = test_set.images[0:200, :, :]
+temp = np.expand_dims(temp, axis=3)
+temp = np.float32(temp)
+
+calibSet=MatrixIterator(temp)
+TrtModelOptimizeAndSerialize(precision='int8', calibPath="content", calibSet=calibSet)
 print("===================================")
 print("After TrtModelOptimizeAndSerialize")
 print("===================================")

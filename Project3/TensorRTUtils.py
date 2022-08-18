@@ -1,6 +1,6 @@
 # TensorRTUtils
-!pip install pycuda
-!pip install tensorrt
+#!pip install pycuda
+#!pip install tensorrt
 import tensorrt as trt
 import pycuda.autoinit
 import pycuda.driver as cuda
@@ -98,7 +98,7 @@ class Int8EntropyCalibrator(trt.IInt8EntropyCalibrator2):
         self.currentIndex = 0
         self.PreProcessedSetPath = calibrationSetPath + '/PreProcessedSet'
         self.PreProcessedSetCount = calibSet.max
-        self.PreProcessedSize = calibSet.first().size * 4 #float
+        self.PreProcessedSize = calibSet.first().size * 4 # float 32
         self.currentIndex = 0
 
         # Allocate enough memory for a whole batch.
@@ -115,7 +115,7 @@ class Int8EntropyCalibrator(trt.IInt8EntropyCalibrator2):
                 print('ERROR - Pre processed file set exists!!!')
                 return
         else:
-            os.mkdir(self.PreProcessedSetPath)
+            os.makedirs(self.PreProcessedSetPath)
 
         if self.PreProcessedSetCount == 0:
             print('ERROR - Calibration set is empty!!!')
@@ -149,6 +149,7 @@ class Int8EntropyCalibrator(trt.IInt8EntropyCalibrator2):
         print('Get pre processed file index - ', not self.currentIndex)
 
         batchData = np.fromfile(self.PreProcessedSetPath + '/' + str(self.currentIndex) + '.bin', dtype=np.single)
+
         cuda.memcpy_htod(self.deviceInput, batchData)
         self.currentIndex += 1
 
@@ -276,12 +277,12 @@ def TrtModelOptimizeAndSerialize(precision = 'fp32',calibPath="", calibSet=None)
         engineFD.write(engine)
         engineFD.close()
 
-    print('TRT engine - ', engine.device_memory_size, ' Bytes')
-    engineDeviceMemory = 0
-    engineDeviceMemory += engine.device_memory_size
-    print('TRT engine number of layers - ', engine.num_layers)
-    print('TRT engine number of bindings - ', engine.num_bindings)
-    print('TRT engine number of profils - ', engine.num_optimization_profiles)
+    #print('TRT engine - ', engine.device_memory_size, ' Bytes')
+    #engineDeviceMemory = 0
+    #engineDeviceMemory += engine.device_memory_size
+    #print('TRT engine number of layers - ', engine.num_layers)
+    #print('TRT engine number of bindings - ', engine.num_bindings)
+    #print('TRT engine number of profils - ', engine.num_optimization_profiles)
 
     print('Completion optimized model')
 
